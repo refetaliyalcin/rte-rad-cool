@@ -16,19 +16,19 @@ clear all
 
 lamda=(400:100:20000)*10^-9; %freespace wavelength of incident ray in meter 
 thickness=1*10^-3;  %thickness of coating in meter 
-lamda_um = lamda*10^6;
-
 f_v=0.04; %volume fraction of air bubbles
-
 polar_angle=linspace(0,89.99999,9); %incident angles. 0 = perpendicular to slab face. 90 parallel and should be avoided.
+photon_number=10^4; %number of rays that will be traced, higher the number more accurate the result
 
 
-r_avg=5;%um
-std_dev=0.01 ;
-r_vector_um=(1:0.2:15); %size range to be considered
+r_avg=2.5;%um
+std_dev=0.1 ;
+r_vector_um=(0:0.2:10); %size range to be considered
 weight_vector = lognpdf(r_vector_um,log(r_avg),std_dev); %the distribution
 r_vector=r_vector_um*10^-6;
 weight_vector=weight_vector/trapz(r_vector,weight_vector); 
+
+lamda_um = lamda*10^6;
 
 figure %show the size distribution
 plot(10^6*r_vector,weight_vector,'LineWidth',2)
@@ -37,14 +37,15 @@ xlabel('Radius [\mum]')
 
 [n_medium, k_medium] = PDMS_nk(lamda*10^6); %Compute n, k of PDMS at lamda in um
 
+figure %show the size distribution
+plot(lamda_um,n_medium,lamda_um,k_medium,'LineWidth',2)
+ylabel('n ,k')
+xlabel('Wavelength [\mum]')
+
 n_pigment=ones(length(lamda),1); %real refractive index of substrate
 k_pigment=zeros(length(lamda),1); %imaginary refractive index of substrate
 n_substrat=ones(length(lamda),1); %real refractive index of substrate
 k_substrat=zeros(length(lamda),1); %imaginary refractive index of substrate
-
-photon_number=10^4; %number of rays that will be traced, higher the number more accurate the result
-n_cdf_random=1000; %how many pieces will be between (0,1) in random number relation with inverse cumulative function, higher the number accurate the phase function. useless if HG is used
-nang_gid=1000; %how many pieces will be between (0,pi) in cumulative distribution function, higher the number more accurate the result. useless if HG is used
 
 
 lamda_nm=lamda*10^9; %for plot
@@ -117,13 +118,13 @@ for j=1:length(polar_angle)
 end
 toc
 figure %draw normal to diffuse R, T and A for normal incidence (first index in my case)
-plot(lamda_um,ref_lamda(:,1),'--r',lamda_um,tra_lamda(:,1),'--k','LineWidth',2)
+plot(lamda_um,ref_lamda(:,1),'-r',lamda_um,tra_lamda(:,1),'-k','LineWidth',2)
 ylim([0 1])
 xlim([0 20])
 legend('R_n_h','T_n_h','Location', 'Best')
 xlabel('Wavelength [\mum]')
 ylabel({'Normal to Hemispherical';'Reflectance, Transmittance, Absorptance'})
-error('end')
+
 T_sur=300;
 T_amb=300;
 BB_Tsur_l=I_bb(lamda,T_sur)';
@@ -168,6 +169,7 @@ emis_calc_window=trapz(lamda,emittance_cal.*BB_Tsur_l.*trans_atm_calc)/trapz(lam
 
 
 emittance=1-ref_lamda-tra_lamda;
+abs_solar=1-ref_lamda;
 
 polar_angle_rad=polar_angle*pi/180;
 Solar_l=I_solar(lamda)';
@@ -182,7 +184,7 @@ emittance_atm=trapz(lamda,BB_Tamb_l.*emittance.*emit_atm,1);
 
 P_rad=trapz(polar_angle_rad,2*cos(polar_angle_rad).*sin(polar_angle_rad).*emittance_rad)
 P_atm=trapz(polar_angle_rad,2*cos(polar_angle_rad).*sin(polar_angle_rad).*emittance_atm)
-P_sol=trapz(lamda,Solar_l.*emittance(:,1))
+P_sol=trapz(lamda,Solar_l.*abs_solar(:,1))
 P_net=P_rad-P_atm- P_sol
 
 
